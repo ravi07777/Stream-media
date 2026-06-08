@@ -700,4 +700,23 @@
         android:name="com.lagradost.cloudstream3.ui.EasterEggMonkeFragment"
         android:label="EasterEggMonkeFragment"
         tools:layout="@layout/fragment_easter_egg_monke" />
+
+    <fragment
+        android:id="@+id/navigation_image_viewer"
+        android:name="com.lagradost.cloudstream3.ui.image.ImageFragment"
+        android:label="@string/image_viewer"
+        tools:layout="@layout/fragment_image_viewer">
+        <argument
+            android:name="imageUrls"
+            android:defaultValue="@null"
+            app:argType="stringArrayList" />
+        <argument
+            android:name="imageNames"
+            android:defaultValue="@null"
+            app:argType="stringArrayList" />
+        <argument
+            android:name="source"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
 </navigation>

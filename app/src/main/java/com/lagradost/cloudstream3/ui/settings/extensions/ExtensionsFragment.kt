@@ -3,11 +3,14 @@ package com.lagradost.cloudstream3.ui.settings.extensions
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.DialogInterface
+import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -22,6 +25,7 @@ import com.lagradost.cloudstream3.databinding.AddRepoInputBinding
 import com.lagradost.cloudstream3.databinding.FragmentExtensionsBinding
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
+import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.BaseFragment
 import com.lagradost.cloudstream3.ui.result.FOCUS_SELF
@@ -37,12 +41,46 @@ import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.setText
+import java.io.File
 
 class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
     BaseFragment.BindingCreator.Inflate(FragmentExtensionsBinding::inflate)
 ) {
 
     private val extensionViewModel: ExtensionsViewModel by activityViewModels()
+
+    private val importExtensionLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        ioSafe {
+            val ctx = context?.applicationContext ?: return@ioSafe
+            val inputStream = ctx.contentResolver.openInputStream(uri) ?: return@ioSafe
+            val fileName = getFileName(uri) ?: "imported.cs3"
+            val destDir = File(ctx.getExternalFilesDir(null), "plugins")
+            if (!destDir.exists()) destDir.mkdirs()
+            val destFile = File(destDir, fileName)
+            inputStream.use { input ->
+                destFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            main {
+                val loaded = PluginManager.maybeLoadPlugin(ctx, destFile)
+                if (loaded) showToast(R.string.plugin_imported, Toast.LENGTH_SHORT)
+                else showToast(R.string.plugin_import_failed, Toast.LENGTH_SHORT)
+                extensionViewModel.loadStats()
+            }
+        }
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        val cursor = context?.contentResolver?.query(uri, null, null, null, null)
+        return cursor?.use {
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (it.moveToFirst() && nameIndex >= 0) it.getString(nameIndex) else null
+        }
+    }
 
     private fun View.setLayoutWidth(weight: Int) {
         val param = LinearLayout.LayoutParams(
@@ -261,6 +299,10 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
 
             addRepoButton.setOnClickListener(addRepositoryClick)
             addRepoButtonImageview.setOnClickListener(addRepositoryClick)
+
+            importExtensionButton.setOnClickListener {
+                importExtensionLauncher.launch(arrayOf("application/zip", "*/*"))
+            }
         }
         reloadRepositories()
     }

@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.ArchiveLoadResponse
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.AnimeLoadResponse
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.context
@@ -26,6 +27,7 @@ import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.EpisodeResponse
 import com.lagradost.cloudstream3.IDownloadableMinimum
+import com.lagradost.cloudstream3.ImageLoadResponse
 import com.lagradost.cloudstream3.LiveStreamLoadResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -325,6 +327,8 @@ fun LoadResponse.toResultData(repo: APIRepository): ResultData {
                 TvType.Audio -> R.string.audio_singular
                 TvType.Podcast -> R.string.podcast_singular
                 TvType.Video -> R.string.video_singular
+                TvType.Image -> R.string.images_singular
+                TvType.Archive -> R.string.archives_singular
             }
         ),
         yearText = txt(year?.toString()),
@@ -1919,6 +1923,8 @@ class ResultViewModel2 : ViewModel() {
             when (response.type) {
                 TvType.Torrent -> R.string.play_torrent_button
                 TvType.TvSeries -> R.string.play_full_series_button
+                TvType.Image -> R.string.image_viewer
+                TvType.Archive -> R.string.archive_file
                 else -> {
                     if (response.type.isLiveStream())
                         R.string.play_livestream_button
@@ -1931,14 +1937,30 @@ class ResultViewModel2 : ViewModel() {
         val data = getMovie()
         _episodes.postValue(null)
         if (text == null || data == null) {
-            _movie.postValue(null)
+            // For Image/Archive types, always show the button even if getMovie() returns null
+            if (response.type == TvType.Image || response.type == TvType.Archive) {
+                val dummyEp = buildResultEpisode(
+                    headerName = response.name,
+                    name = response.name,
+                    data = response.url,
+                    apiName = response.apiName,
+                    id = response.getId(),
+                    episode = 1,
+                    index = 0,
+                    parentId = response.getId(),
+                    tvType = response.type,
+                )
+                _movie.postValue(Resource.Success(text to dummyEp))
+            } else {
+                _movie.postValue(null)
+            }
         } else {
             _movie.postValue(Resource.Success(text to data))
         }
     }
 
     fun reloadEpisodes() {
-        if (currentResponse?.isMovie() == true) {
+        if (currentResponse?.isMovie() == true || currentResponse?.type == TvType.Image || currentResponse?.type == TvType.Archive) {
             postMovie()
         } else {
             _episodes.postValue(
@@ -2162,6 +2184,11 @@ class ResultViewModel2 : ViewModel() {
 
         if (updateEpisodes)
             postEpisodes(loadResponse, mainId, updateFillers)
+
+        // For Image and Archive types, also show the play button
+        if (loadResponse.type == TvType.Image || loadResponse.type == TvType.Archive) {
+            postMovie()
+        }
     }
 
     private suspend fun postEpisodes(
@@ -2506,6 +2533,21 @@ class ResultViewModel2 : ViewModel() {
     }
 
     fun hasLoaded() = currentResponse != null
+
+    val responseType: TvType?
+        get() = currentResponse?.type
+
+    val responseImageUrls: List<String>?
+        get() = (currentResponse as? ImageLoadResponse)?.imageUrls
+
+    val responseArchiveUrl: String?
+        get() = (currentResponse as? ArchiveLoadResponse)?.archiveUrl
+
+    val responseArchiveHeaders: Map<String, String>?
+        get() = (currentResponse as? ArchiveLoadResponse)?.archiveHeaders
+
+    val responseImageHeaders: Map<String, String>?
+        get() = (currentResponse as? ImageLoadResponse)?.imageHeaders
 
     private fun handleAutoStart(activity: Activity?, autostart: AutoResume?) =
         viewModelScope.launchSafe {

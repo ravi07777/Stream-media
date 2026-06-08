@@ -19,8 +19,9 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isGone
-import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
+import androidx.navigation.fragment.findNavController
+import com.lagradost.cloudstream3.TvType
 import androidx.core.widget.NestedScrollView
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.ViewModelProvider
@@ -92,6 +93,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
+import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.populateChips
 import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIconsAndNoStringRes
@@ -870,15 +872,51 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
         observeNullable(viewModel.movie) { data ->
             resultBinding?.apply {
                 resultPlayMovie.isVisible = data is Resource.Success
-                downloadButton.isVisible =
-                    data is Resource.Success && viewModel.currentRepo?.api?.hasDownloadSupport == true
+                val isDownloadable = data is Resource.Success
+                        && viewModel.currentRepo?.api?.hasDownloadSupport == true
+                        && viewModel.responseType != TvType.Image
+                        && viewModel.responseType != TvType.Archive
+                downloadButton.isVisible = isDownloadable
 
                 (data as? Resource.Success)?.value?.let { (text, ep) ->
                     resultPlayMovie.setText(text)
                     resultPlayMovie.setOnClickListener {
-                        viewModel.handleAction(
-                            EpisodeClickEvent(ACTION_CLICK_DEFAULT, ep)
-                        )
+                        when (viewModel.responseType) {
+                            TvType.Image -> {
+                                val imageUrls = viewModel.responseImageUrls
+                                if (!imageUrls.isNullOrEmpty()) {
+                                    activity?.navigate(
+                                        R.id.navigation_image_viewer,
+                                        Bundle().apply {
+                                            putStringArrayList("imageUrls", ArrayList(imageUrls))
+                                            putStringArrayList("imageNames", ArrayList())
+                                            putString("source", viewModel.currentRepo?.name ?: "")
+                                        }
+                                    )
+                                }
+                            }
+                            TvType.Archive -> {
+                                val archiveUrl = viewModel.responseArchiveUrl
+                                if (archiveUrl != null) {
+                                    context?.let { ctx ->
+                                        com.lagradost.cloudstream3.ui.archive.ArchiveLinkDialog.show(
+                                            ctx,
+                                            com.lagradost.cloudstream3.utils.ArchiveLink(
+                                                source = viewModel.currentRepo?.name ?: "",
+                                                name = ep.name ?: ep.data,
+                                                url = archiveUrl,
+                                                headers = viewModel.responseArchiveHeaders ?: emptyMap(),
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {
+                                viewModel.handleAction(
+                                    EpisodeClickEvent(ACTION_CLICK_DEFAULT, ep)
+                                )
+                            }
+                        }
                     }
                     resultPlayMovie.setOnLongClickListener {
                         viewModel.handleAction(

@@ -783,5 +783,17 @@
         <item quantity="other">%d downloads queued</item>
     </plurals>
     <string name="player_is_live">Live</string>
+    <string name="import_extension">Import Extension</string>
+    <string name="plugin_imported">Extension imported successfully</string>
+    <string name="plugin_import_failed">Failed to import extension</string>
+    <string name="image_viewer">Image Viewer</string>
+    <string name="share_image">Share Image URL</string>
+    <string name="copy_url">Copy URL</string>
+    <string name="url_copied">URL copied</string>
+    <string name="open_externally">Open Externally</string>
+    <string name="share">Share</string>
+    <string name="images_singular">Image</string>
+    <string name="archives_singular">Archive</string>
+    <string name="archive_file">Archive File</string>
 
 </resources>

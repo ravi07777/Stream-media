@@ -687,6 +687,30 @@ abstract class MainAPI {
         throw NotImplementedError()
     }
 
+    /** Optional: return image URLs for image-type content.
+     * @param data The data string from the LoadResponse.
+     * @param callback Fired for each image link found.
+     * @return true if images were loaded successfully.
+     */
+    open suspend fun loadImages(
+        data: String,
+        callback: (ImageLink) -> Unit
+    ): Boolean {
+        throw NotImplementedError()
+    }
+
+    /** Optional: return archive links for archive-type content.
+     * @param data The data string from the LoadResponse.
+     * @param callback Fired for each archive link found.
+     * @return true if archives were loaded successfully.
+     */
+    open suspend fun loadArchiveLinks(
+        data: String,
+        callback: (ArchiveLink) -> Unit
+    ): Boolean {
+        throw NotImplementedError()
+    }
+
     /** An okhttp interceptor for used in OkHttpDataSource */
     open fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor? {
         return null
@@ -1088,6 +1112,10 @@ enum class TvType(value: Int?) {
     Podcast(17),
     @Prerelease
     Video(18),
+    @Prerelease
+    Image(19),
+    @Prerelease
+    Archive(20),
 }
 
 enum class AutoDownloadMode(val value: Int) {
@@ -1719,6 +1747,66 @@ constructor(
     )
 }
 
+/** Image Search Response */
+data class ImageSearchResponse
+constructor(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override var type: TvType? = null,
+    override var posterUrl: String? = null,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
+    override var posterHeaders: Map<String, String>? = null,
+    override var score: Score? = null,
+    var imageUrls: List<String> = emptyList(),
+) : SearchResponse
+
+fun MainAPI.newImageSearchResponse(
+    name: String,
+    url: String,
+    fix: Boolean = true,
+    initializer: ImageSearchResponse.() -> Unit = { },
+): ImageSearchResponse {
+    val builder = ImageSearchResponse(
+        name = name,
+        url = if (fix) fixUrl(url) else url,
+        apiName = this.name,
+    )
+    builder.initializer()
+    return builder
+}
+
+/** Archive Search Response */
+data class ArchiveSearchResponse
+constructor(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override var type: TvType? = null,
+    override var posterUrl: String? = null,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
+    override var posterHeaders: Map<String, String>? = null,
+    override var score: Score? = null,
+    var archiveUrl: String? = null,
+) : SearchResponse
+
+fun MainAPI.newArchiveSearchResponse(
+    name: String,
+    url: String,
+    fix: Boolean = true,
+    initializer: ArchiveSearchResponse.() -> Unit = { },
+): ArchiveSearchResponse {
+    val builder = ArchiveSearchResponse(
+        name = name,
+        url = if (fix) fixUrl(url) else url,
+        apiName = this.name,
+    )
+    builder.initializer()
+    return builder
+}
+
 /** Data class of Trailer data.
  * @property extractorUrl Url string of the Trailer video.
  * @property referer Nullable string of referer to be used in network request.
@@ -2152,6 +2240,8 @@ fun TvType.getFolderPrefix(): String {
         TvType.Torrent -> "Torrents"
         TvType.TvSeries -> "TVSeries"
         TvType.Video -> "Videos"
+        TvType.Image -> "Images"
+        TvType.Archive -> "Archives"
     }
 }
 
@@ -2480,6 +2570,94 @@ suspend fun MainAPI.newMovieLoadResponse(
         type = type,
         dataUrl = dataUrl,
         comingSoon = dataUrl.isBlank()
+    )
+    builder.initializer()
+    return builder
+}
+
+/** Image Load Response */
+data class ImageLoadResponse
+constructor(
+    override var name: String,
+    override var url: String,
+    override var apiName: String,
+    override var type: TvType = TvType.Image,
+    var imageUrls: List<String>,
+    var imageHeaders: Map<String, String>? = null,
+    override var posterUrl: String? = null,
+    override var year: Int? = null,
+    override var plot: String? = null,
+    override var score: Score? = null,
+    override var tags: List<String>? = null,
+    override var duration: Int? = null,
+    override var trailers: MutableList<TrailerData> = mutableListOf(),
+    override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
+    override var syncData: MutableMap<String, String> = mutableMapOf(),
+    override var posterHeaders: Map<String, String>? = null,
+    override var backgroundPosterUrl: String? = null,
+    override var logoUrl: String? = null,
+    override var contentRating: String? = null,
+    override var uniqueUrl: String = url
+) : LoadResponse
+
+suspend fun MainAPI.newImageLoadResponse(
+    name: String,
+    url: String,
+    imageUrls: List<String>,
+    initializer: suspend ImageLoadResponse.() -> Unit = { }
+): ImageLoadResponse {
+    val builder = ImageLoadResponse(
+        name = name,
+        url = url,
+        apiName = this.name,
+        imageUrls = imageUrls,
+        comingSoon = imageUrls.isEmpty()
+    )
+    builder.initializer()
+    return builder
+}
+
+/** Archive Load Response */
+data class ArchiveLoadResponse
+constructor(
+    override var name: String,
+    override var url: String,
+    override var apiName: String,
+    override var type: TvType = TvType.Archive,
+    var archiveUrl: String?,
+    var archiveHeaders: Map<String, String>? = null,
+    override var posterUrl: String? = null,
+    override var year: Int? = null,
+    override var plot: String? = null,
+    override var score: Score? = null,
+    override var tags: List<String>? = null,
+    override var duration: Int? = null,
+    override var trailers: MutableList<TrailerData> = mutableListOf(),
+    override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
+    override var syncData: MutableMap<String, String> = mutableMapOf(),
+    override var posterHeaders: Map<String, String>? = null,
+    override var backgroundPosterUrl: String? = null,
+    override var logoUrl: String? = null,
+    override var contentRating: String? = null,
+    override var uniqueUrl: String = url
+) : LoadResponse
+
+suspend fun MainAPI.newArchiveLoadResponse(
+    name: String,
+    url: String,
+    archiveUrl: String?,
+    initializer: suspend ArchiveLoadResponse.() -> Unit = { }
+): ArchiveLoadResponse {
+    val builder = ArchiveLoadResponse(
+        name = name,
+        url = url,
+        apiName = this.name,
+        archiveUrl = archiveUrl,
+        comingSoon = archiveUrl.isNullOrBlank()
     )
     builder.initializer()
     return builder

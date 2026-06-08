@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.databinding.FragmentResultTvBinding
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.observe
@@ -678,9 +679,42 @@ class ResultFragmentTv : BaseFragment<FragmentResultTvBinding>(
             binding.apply {
                 (data as? Resource.Success)?.value?.let { (_, ep) ->
                     resultPlayMovieButton.setOnClickListener {
-                        viewModel.handleAction(
-                            EpisodeClickEvent(ACTION_CLICK_DEFAULT, ep)
-                        )
+                        when (viewModel.responseType) {
+                            TvType.Image -> {
+                                val imageUrls = viewModel.responseImageUrls
+                                if (!imageUrls.isNullOrEmpty()) {
+                                    activity.navigate(
+                                        R.id.navigation_image_viewer,
+                                        Bundle().apply {
+                                            putStringArrayList("imageUrls", ArrayList(imageUrls))
+                                            putStringArrayList("imageNames", ArrayList())
+                                            putString("source", viewModel.currentRepo?.name ?: "")
+                                        }
+                                    )
+                                }
+                            }
+                            TvType.Archive -> {
+                                val archiveUrl = viewModel.responseArchiveUrl
+                                if (archiveUrl != null) {
+                                    context?.let { ctx ->
+                                        com.lagradost.cloudstream3.ui.archive.ArchiveLinkDialog.show(
+                                            ctx,
+                                            com.lagradost.cloudstream3.utils.ArchiveLink(
+                                                source = viewModel.currentRepo?.name ?: "",
+                                                name = ep.name ?: ep.data,
+                                                url = archiveUrl,
+                                                headers = viewModel.responseArchiveHeaders ?: emptyMap(),
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {
+                                viewModel.handleAction(
+                                    EpisodeClickEvent(ACTION_CLICK_DEFAULT, ep)
+                                )
+                            }
+                        }
                     }
                     resultPlayMovieButton.setOnLongClickListener {
                         viewModel.handleAction(

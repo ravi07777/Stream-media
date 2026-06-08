@@ -817,6 +817,52 @@ constructor(
     }
 }
 
+/** Image link data class returned by providers for image-type content.
+ * @property source Name of the source provider
+ * @property name Title/description of the image
+ * @property url Direct URL to the image file
+ * @property referer Optional referer for the image request
+ * @property headers Optional headers for the image request
+ * @property width Optional image width in pixels
+ * @property height Optional image height in pixels
+ */
+data class ImageLink(
+    val source: String,
+    val name: String,
+    val url: String,
+    val referer: String = "",
+    val headers: Map<String, String> = mapOf(),
+    val width: Int? = null,
+    val height: Int? = null,
+)
+
+/** Archive types supported for downloadable links */
+enum class ArchiveType {
+    Zip,
+    Rar,
+    SevenZ,
+    Unknown,
+}
+
+/** Archive link data class returned by providers for archive-type content.
+ * @property source Name of the source provider
+ * @property name Title/description of the archive
+ * @property url Direct URL to the archive file
+ * @property referer Optional referer for the archive request
+ * @property headers Optional headers for the archive request
+ * @property fileSize Optional file size in bytes
+ * @property archiveType Detected or declared archive type
+ */
+data class ArchiveLink(
+    val source: String,
+    val name: String,
+    val url: String,
+    val referer: String = "",
+    val headers: Map<String, String> = mapOf(),
+    val fileSize: Long? = null,
+    val archiveType: ArchiveType = ArchiveType.Unknown,
+)
+
 /**
  * Removes https:// and www.
  * To match urls regardless of schema, perhaps Uri() can be used?

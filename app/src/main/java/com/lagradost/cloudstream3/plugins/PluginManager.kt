@@ -204,7 +204,7 @@ object PluginManager {
     var loadedOnlinePlugins = false
         private set
 
-    private suspend fun maybeLoadPlugin(context: Context, file: File) {
+    suspend fun maybeLoadPlugin(context: Context, file: File) {
         val name = file.name
         if (file.extension == "zip" || file.extension == "cs3") {
             loadPlugin(
