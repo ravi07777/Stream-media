@@ -1950,7 +1950,7 @@ class ResultViewModel2 : ViewModel() {
                     parentId = response.getId(),
                     tvType = response.type,
                 )
-                _movie.postValue(Resource.Success(text to dummyEp))
+                _movie.postValue(Resource.Success(text!! to dummyEp))
             } else {
                 _movie.postValue(null)
             }

@@ -1352,7 +1352,7 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
             }
             loadingDialog?.findViewById<MaterialButton>(R.id.overlay_loading_skip_button)?.apply {
                 if (load.linksLoaded <= 0) {
-                    isInvisible = true
+                    visibility = View.INVISIBLE
                 } else {
                     setOnClickListener {
                         viewModel.skipLoading()

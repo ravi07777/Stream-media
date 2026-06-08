@@ -10,7 +10,6 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.utils.ArchiveLink
 
@@ -40,7 +39,7 @@ object ArchiveLinkDialog {
     private fun copyUrl(context: Context, url: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("url", url))
-        showToast(context, R.string.url_copied, Toast.LENGTH_SHORT)
+        Toast.makeText(context, R.string.url_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun shareUrl(context: Context, url: String, name: String) {
@@ -56,7 +55,7 @@ object ArchiveLinkDialog {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             context.startActivity(intent)
         } catch (e: Exception) {
-            showToast(context, R.string.error_invalid_data, Toast.LENGTH_SHORT)
+            Toast.makeText(context, R.string.error_invalid_data, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -80,10 +79,10 @@ object ArchiveLinkDialog {
             downloadManager.enqueue(request)
         } catch (e: SecurityException) {
             Log.e(TAG, "Download permission denied: ${e.message}")
-            showToast(context, R.string.download_failed, Toast.LENGTH_SHORT)
+            Toast.makeText(context, R.string.download_failed, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Download failed: ${e.message}")
-            showToast(context, R.string.download_failed, Toast.LENGTH_SHORT)
+            Toast.makeText(context, R.string.download_failed, Toast.LENGTH_SHORT).show()
         }
     }
 }

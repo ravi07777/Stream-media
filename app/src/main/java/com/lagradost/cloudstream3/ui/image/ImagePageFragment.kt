@@ -51,7 +51,7 @@ class ImagePageFragment : Fragment() {
         val imageView = ImageView(requireContext()).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
-        imageView.loadImage(UiImage(url = url, headers = headers))
+        imageView.loadImage(UiImage.Image(url = url, headers = headers))
         return imageView
     }
 }

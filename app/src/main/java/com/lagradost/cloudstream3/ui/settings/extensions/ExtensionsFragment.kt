@@ -66,9 +66,8 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                 }
             }
             main {
-                val loaded = PluginManager.maybeLoadPlugin(ctx, destFile)
-                if (loaded) showToast(R.string.plugin_imported, Toast.LENGTH_SHORT)
-                else showToast(R.string.plugin_import_failed, Toast.LENGTH_SHORT)
+                PluginManager.maybeLoadPlugin(ctx, destFile)
+                showToast(R.string.plugin_imported, Toast.LENGTH_SHORT)
                 extensionViewModel.loadStats()
             }
         }

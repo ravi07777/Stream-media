@@ -20,6 +20,8 @@ import com.lagradost.cloudstream3.utils.downloader.ImageDownloadHelper
 class ImageFragment : BaseFragment<FragmentImageViewerBinding>(
     BaseFragment.BindingCreator.Inflate(FragmentImageViewerBinding::inflate)
 ) {
+    override fun fixLayout(view: View) {}
+
     override fun onBindingCreated(binding: FragmentImageViewerBinding) {
         val args = arguments
         val imageUrls = args?.getStringArrayList("imageUrls") ?: return
